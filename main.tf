@@ -462,7 +462,6 @@ resource "aws_ecs_task_definition" "dify_api" {
           INDEXING_MAX_SEGMENTATION_TOKENS_LENGTH = 1000
           # Enable email code login
           ENABLE_EMAIL_CODE_LOGIN = "true"
-          BILLING_ENABLED         = "true"
         } : { name = name, value = tostring(value) }
       ]
       secrets = [
@@ -997,11 +996,11 @@ resource "aws_lb_target_group" "api" {
   deregistration_delay = 65
 
   health_check {
-    path     = "/health"
-    interval = 10
-    # timeout             = 5
-    # healthy_threshold   = 3
-    # unhealthy_threshold = 5
+    path                = "/health"
+    interval            = 30
+    timeout             = 10
+    healthy_threshold   = 2
+    unhealthy_threshold = 5
   }
 }
 
