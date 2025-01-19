@@ -27,7 +27,6 @@ resource "aws_security_group" "redis" {
   description = "Redis for Dify"
   vpc_id      = var.vpc_id
   tags        = { Name = "dify-redis" }
-  # API/Worker からの ingress を下の方で定義している
 }
 
 resource "aws_elasticache_subnet_group" "redis" {
@@ -55,19 +54,6 @@ resource "aws_elasticache_replication_group" "redis" {
   auth_token_update_strategy = "SET"
   auth_token                 = var.redis_password
 
-  # auth token を後から変更する場合（ROTATE して SET する）
-  # REDIS_PASSWORD='put your redis password'
-  # aws elasticache modify-replication-group \
-  #   --replication-group-id dify \
-  #   --auth-token ${REDIS_PASSWORD} \
-  #   --auth-token-update-strategy ROTATE \
-  #   --apply-immediately
-  # aws elasticache modify-replication-group \
-  #   --replication-group-id dify \
-  #   --auth-token ${REDIS_PASSWORD} \
-  #   --auth-token-update-strategy SET \
-  #   --apply-immediately
-
   maintenance_window       = "sat:18:00-sat:19:00"
   snapshot_window          = "20:00-21:00"
   snapshot_retention_limit = 1
@@ -89,8 +75,6 @@ resource "aws_security_group" "database" {
   # API/Worker からの ingress を下の方で定義している
 }
 
-# S3 バックアップなどでインターネットへのアクセスが必要な場合は egress を追加する。
-# VPC Endpoint や Managed Prefix List を使ってインターネットへのアクセスを制限するのがベター。
 resource "aws_security_group_rule" "database_to_internet" {
   security_group_id = aws_security_group.database.id
   type              = "egress"
@@ -121,15 +105,6 @@ resource "aws_rds_cluster" "dify" {
   master_username = "postgres"
   master_password = var.db_master_password
 
-  # データベースは後から構築する
-  # -- CREATE ROLE dify WITH LOGIN PASSWORD 'your-password'; # パスワードはterraform.tfvarsに設定したもの
-  # -- GRANT dify TO postgres;
-  # -- CREATE DATABASE dify WITH OWNER dify;
-  # -- \c dify
-  # -- CREATE EXTENSION vector;
-
-  # 上記 SQL をマネジメントコンソールのクエリエディタで実行する場合は HTTP エンドポイントを有効にする。
-  # エンドポイントを有効にしない場合は踏み台インスタンスなどを用意して上記 SQL を実行する。
   enable_http_endpoint = true
 
   backup_retention_period  = 7
@@ -357,8 +332,8 @@ resource "aws_ecs_task_definition" "dify_api" {
   task_role_arn            = aws_iam_role.app.arn
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = 1024 # TODO: variable
-  memory                   = 2048 # TODO: variable
+  cpu                      = var.api_task_cpu
+  memory                   = var.api_task_memory
 
   volume {
     name = "dependencies"
@@ -640,8 +615,8 @@ resource "aws_ecs_task_definition" "dify_worker" {
   task_role_arn            = aws_iam_role.app.arn
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = 1024 # TODO: variable
-  memory                   = 2048 # TODO: variable
+  cpu                      = var.worker_task_cpu
+  memory                   = var.worker_task_memory
 
   container_definitions = jsonencode([
     {
@@ -797,8 +772,8 @@ resource "aws_ecs_task_definition" "dify_web" {
   task_role_arn            = aws_iam_role.web.arn
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = 1024 # TODO: variable
-  memory                   = 2048 # TODO: variable
+  cpu                      = var.web_task_cpu
+  memory                   = var.web_task_memory
 
   container_definitions = jsonencode([
     {

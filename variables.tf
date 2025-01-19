@@ -102,3 +102,35 @@ variable "worker_desired_count" {
 variable "web_desired_count" {
   default = 1
 }
+
+# ECS Task Resources
+
+variable "api_task_cpu" {
+  description = "CPU units for API task (1024 = 1 vCPU)"
+  default     = 1024
+}
+
+variable "api_task_memory" {
+  description = "Memory for API task in MiB"
+  default     = 2048
+}
+
+variable "worker_task_cpu" {
+  description = "CPU units for Worker task (1024 = 1 vCPU)"
+  default     = 1024
+}
+
+variable "worker_task_memory" {
+  description = "Memory for Worker task in MiB"
+  default     = 2048
+}
+
+variable "web_task_cpu" {
+  description = "CPU units for Web task (1024 = 1 vCPU)"
+  default     = 1024
+}
+
+variable "web_task_memory" {
+  description = "Memory for Web task in MiB"
+  default     = 2048
+}
